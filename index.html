@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="tr" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#050510" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Sleeply Aura — Yapay Zeka Destekli Uyku Sesleri</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { night: '#050510', aura: '#9d4edd', violetSoft: '#c77dff' },
+          boxShadow: { glow: '0 0 40px rgba(157, 78, 221, .25)' }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="min-h-screen overflow-x-hidden bg-black text-white antialiased selection:bg-aura/40">
+  <canvas id="auraCanvas" class="fixed inset-0 -z-20 h-full w-full"></canvas>
+  <div class="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top,#12061f_0%,#050510_42%,#000_100%)] opacity-90"></div>
+
+  <main class="mx-auto min-h-screen w-full max-w-6xl px-4 pb-36 pt-[max(1rem,env(safe-area-inset-top))] sm:px-6 lg:px-8">
+    <header class="sticky top-0 z-30 -mx-4 flex items-center justify-between gap-3 border-b border-white/5 bg-black/45 px-4 py-3 backdrop-blur-2xl sm:-mx-6 sm:px-6 lg:static lg:mx-0 lg:border-0 lg:bg-transparent lg:px-0">
+      <div>
+        <p class="text-xs uppercase tracking-[.35em] text-violetSoft/70">Sleeply Aura</p>
+        <h1 class="mt-1 text-2xl font-semibold tracking-tight sm:text-4xl">Uyku seslerini karıştır.</h1>
+      </div>
+      <button id="authButton" class="touch-target rounded-full border border-white/10 bg-white/10 px-4 py-3 text-sm font-medium shadow-glow backdrop-blur-xl transition active:scale-95">
+        Google ile Giriş
+      </button>
+      <div id="profileChip" class="hidden items-center gap-2 rounded-full border border-white/10 bg-white/10 p-1 pr-3 backdrop-blur-xl">
+        <img id="profileAvatar" class="h-9 w-9 rounded-full" alt="Profil" />
+        <span id="profileName" class="max-w-28 truncate text-sm font-medium"></span>
+      </div>
+    </header>
+
+    <section class="pt-8 lg:grid lg:grid-cols-[1.05fr_.95fr] lg:items-end lg:gap-10 lg:pt-14">
+      <div>
+        <div class="inline-flex rounded-full border border-aura/30 bg-aura/10 px-4 py-2 text-sm text-violetSoft shadow-glow">AI destekli mobil uyku mikseri</div>
+        <h2 class="mt-5 text-4xl font-semibold leading-tight tracking-[-.04em] sm:text-6xl">Zepp Aura hissinde, tek elle kontrol.</h2>
+        <p class="mt-4 max-w-xl text-base leading-7 text-white/60">Yağmur, ateş, meditasyon ve beyaz gürültüyü aynı anda çal. Seviyeleri bağımsız ayarla, favori miksini Supabase hesabına kaydet.</p>
+      </div>
+      <div class="mt-6 rounded-[2rem] border border-white/10 bg-white/[.06] p-4 shadow-glow backdrop-blur-2xl lg:mt-0">
+        <p class="text-sm text-white/50">Önerilen başlangıç</p>
+        <div class="mt-3 grid grid-cols-3 gap-2">
+          <button class="preset-btn touch-target rounded-2xl bg-white/10 p-3 text-sm active:scale-95" data-preset="deep">Derin</button>
+          <button class="preset-btn touch-target rounded-2xl bg-white/10 p-3 text-sm active:scale-95" data-preset="focus">Sakin</button>
+          <button class="preset-btn touch-target rounded-2xl bg-white/10 p-3 text-sm active:scale-95" data-preset="nature">Doğa</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="mt-8">
+      <div class="mb-4 flex items-end justify-between">
+        <div>
+          <h3 class="text-xl font-semibold">Ses Kartları</h3>
+          <p class="text-sm text-white/45">Birden fazla sesi aynı anda açabilirsin.</p>
+        </div>
+        <button id="stopAllButton" class="touch-target rounded-full bg-white/10 px-4 py-2 text-sm text-white/70 active:scale-95">Durdur</button>
+      </div>
+      <div id="soundGrid" class="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6"></div>
+    </section>
+
+    <section class="mt-8 grid gap-4 md:grid-cols-[1fr_1fr]">
+      <div class="rounded-[1.75rem] border border-white/10 bg-white/[.06] p-4 backdrop-blur-2xl">
+        <h3 class="text-lg font-semibold">Uyku Zamanlayıcısı</h3>
+        <p id="timerStatus" class="mt-1 text-sm text-white/45">Zamanlayıcı kapalı.</p>
+        <div class="mt-4 grid grid-cols-3 gap-2">
+          <button class="timer-btn touch-target rounded-2xl bg-aura/20 py-4 font-semibold active:scale-95" data-minutes="15">15 dk</button>
+          <button class="timer-btn touch-target rounded-2xl bg-aura/20 py-4 font-semibold active:scale-95" data-minutes="30">30 dk</button>
+          <button class="timer-btn touch-target rounded-2xl bg-aura/20 py-4 font-semibold active:scale-95" data-minutes="45">45 dk</button>
+        </div>
+      </div>
+      <div class="rounded-[1.75rem] border border-white/10 bg-white/[.06] p-4 backdrop-blur-2xl">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <h3 class="text-lg font-semibold">Favori Miksler</h3>
+            <p class="text-sm text-white/45">Supabase `saved_mixes` tablosuna kaydedilir.</p>
+          </div>
+          <button id="saveMixButton" class="touch-target rounded-full bg-white px-4 py-3 text-sm font-semibold text-black active:scale-95">Kaydet</button>
+        </div>
+        <div id="savedMixes" class="mt-4 flex gap-2 overflow-x-auto pb-1"></div>
+      </div>
+    </section>
+  </main>
+
+  <aside id="playerSheet" class="fixed inset-x-0 bottom-0 z-40 rounded-t-[2rem] border border-white/10 bg-[#080812]/90 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 shadow-glow backdrop-blur-2xl md:left-1/2 md:max-w-2xl md:-translate-x-1/2">
+    <div class="mx-auto mb-3 h-1.5 w-12 rounded-full bg-white/20"></div>
+    <div class="flex items-center justify-between gap-3">
+      <div>
+        <p class="text-xs uppercase tracking-[.25em] text-aura">Şimdi Çalıyor</p>
+        <p id="activeSummary" class="mt-1 text-sm text-white/65">Henüz ses seçilmedi.</p>
+      </div>
+      <button id="masterToggle" class="touch-target rounded-full bg-aura px-5 py-3 text-sm font-bold shadow-glow active:scale-95">Başlat</button>
+    </div>
+  </aside>
+
+  <div id="onboarding" class="fixed inset-0 z-50 hidden bg-black/95 p-5 backdrop-blur-2xl">
+    <div class="mx-auto flex h-full max-w-md flex-col justify-center overflow-hidden">
+      <div id="onboardingSlides" class="flex transition-transform duration-500 ease-out">
+        <section class="min-w-full px-1"><p class="text-aura">1/3</p><h2 class="mt-4 text-4xl font-semibold">Bu gece nasıl hissediyorsun?</h2><button class="onboard-choice touch-target mt-8 w-full rounded-3xl bg-white/10 p-5 text-left" data-answer="calm">Sakinleşmek istiyorum</button><button class="onboard-choice touch-target mt-3 w-full rounded-3xl bg-white/10 p-5 text-left" data-answer="deep">Derin uyku</button></section>
+        <section class="min-w-full px-1"><p class="text-aura">2/3</p><h2 class="mt-4 text-4xl font-semibold">Favori dokun nedir?</h2><button class="onboard-choice touch-target mt-8 w-full rounded-3xl bg-white/10 p-5 text-left" data-answer="rain">Yağmur</button><button class="onboard-choice touch-target mt-3 w-full rounded-3xl bg-white/10 p-5 text-left" data-answer="fire">Kamp ateşi</button></section>
+        <section class="min-w-full px-1"><p class="text-aura">3/3</p><h2 class="mt-4 text-4xl font-semibold">Aura rengin?</h2><button class="onboard-choice touch-target mt-8 w-full rounded-3xl bg-white/10 p-5 text-left" data-answer="violet">Neon mor</button><button class="onboard-choice touch-target mt-3 w-full rounded-3xl bg-white/10 p-5 text-left" data-answer="blue">Gece mavisi</button></section>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="app.js" defer></script>
+</body>
+</html>
