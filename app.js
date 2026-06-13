@@ -9,82 +9,78 @@ const SUPABASE_URL = 'https://YOUR-PROJECT.supabase.co';
 const SUPABASE_ANON_KEY = 'YOUR-ANON-KEY';
 const supabaseClient = window.supabase?.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+const AUDIO_BASE = 'https://cdn.jsdelivr.net/gh/bradtraversy/ambient-sound-mixer@main/audio';
+const BABY_AUDIO_BASE = 'https://raw.githubusercontent.com/brarcher/baby-sleep-sounds/master/app/src/main/res/raw';
+
 const sounds = [
-  { id: 'rain', name: 'Yağmur', icon: '☔', category: 'Doğa', color: '#9d4edd', type: 'noise', filter: 900, defaultVolume: 40 },
-  { id: 'white', name: 'Beyaz Gürültü', icon: '◌', category: 'Noise', color: '#e0aaff', type: 'noise', filter: 3600, defaultVolume: 25 },
-  { id: 'meditation', name: 'Meditasyon', icon: 'ॐ', category: 'Meditasyon', color: '#c77dff', type: 'tone', frequency: 174, defaultVolume: 30 },
-  { id: 'forest', name: 'Orman', icon: '🌿', category: 'Doğa', color: '#80ffdb', type: 'tone', frequency: 396, defaultVolume: 24 },
-  { id: 'fire', name: 'Kamp Ateşi', icon: '🔥', category: 'Ateş', color: '#ff9e64', type: 'noise', filter: 520, defaultVolume: 35 },
-  { id: 'mix', name: 'Karma Aura', icon: '✦', category: 'Karma', color: '#7b2cbf', type: 'tone', frequency: 285, defaultVolume: 28 }
+  { id: 'rain', name: 'Yağmur', category: 'Doğa', image: 'linear-gradient(145deg, rgba(57,44,101,.95), rgba(11,13,28,.72)), radial-gradient(circle at 30% 20%, rgba(199,125,255,.85), transparent 34%)', src: `${AUDIO_BASE}/rain.mp3`, defaultVolume: 42 },
+  { id: 'ocean', name: 'Okyanus', category: 'Su', image: 'linear-gradient(145deg, rgba(19,62,93,.92), rgba(4,8,20,.82)), radial-gradient(circle at 78% 16%, rgba(72,191,227,.82), transparent 33%)', src: `${AUDIO_BASE}/ocean.mp3`, defaultVolume: 34 },
+  { id: 'forest', name: 'Orman', category: 'Doğa', image: 'linear-gradient(145deg, rgba(23,70,55,.9), rgba(5,12,16,.84)), radial-gradient(circle at 26% 24%, rgba(128,255,219,.62), transparent 31%)', src: `${AUDIO_BASE}/birds.mp3`, defaultVolume: 26 },
+  { id: 'fireplace', name: 'Kamp Ateşi', category: 'Ateş', image: 'linear-gradient(145deg, rgba(114,43,21,.9), rgba(12,7,10,.86)), radial-gradient(circle at 30% 18%, rgba(255,158,100,.9), transparent 34%)', src: `${AUDIO_BASE}/fireplace.mp3`, defaultVolume: 32 },
+  { id: 'thunder', name: 'Uzak Fırtına', category: 'Yağmur', image: 'linear-gradient(145deg, rgba(54,47,89,.92), rgba(5,5,16,.86)), radial-gradient(circle at 72% 20%, rgba(224,170,255,.6), transparent 28%)', src: `${AUDIO_BASE}/thunder.mp3`, defaultVolume: 18 },
+  { id: 'wind', name: 'Rüzgar', category: 'Hava', image: 'linear-gradient(145deg, rgba(60,73,95,.88), rgba(8,10,20,.86)), radial-gradient(circle at 20% 18%, rgba(180,205,255,.55), transparent 33%)', src: `${AUDIO_BASE}/wind.mp3`, defaultVolume: 24 },
+  { id: 'night', name: 'Gece Bahçesi', category: 'Gece', image: 'linear-gradient(145deg, rgba(31,30,77,.92), rgba(0,0,8,.9)), radial-gradient(circle at 75% 18%, rgba(157,78,221,.7), transparent 30%)', src: `${AUDIO_BASE}/night.mp3`, defaultVolume: 22 },
+  { id: 'cafe', name: 'Loş Kafe', category: 'Ambiyans', image: 'linear-gradient(145deg, rgba(89,54,33,.9), rgba(9,7,10,.88)), radial-gradient(circle at 25% 22%, rgba(255,214,165,.64), transparent 31%)', src: `${AUDIO_BASE}/cafe.mp3`, defaultVolume: 18 },
+  { id: 'stream', name: 'Dere Akışı', category: 'Su', image: 'linear-gradient(145deg, rgba(16,79,91,.92), rgba(4,12,18,.88)), radial-gradient(circle at 70% 15%, rgba(72,219,251,.66), transparent 34%)', src: `${BABY_AUDIO_BASE}/stream.mp3`, defaultVolume: 30 },
+  { id: 'fan', name: 'Yumuşak Fan', category: 'Beyaz Gürültü', image: 'linear-gradient(145deg, rgba(80,84,104,.9), rgba(7,8,16,.88)), radial-gradient(circle at 24% 18%, rgba(238,242,255,.52), transparent 30%)', src: `${BABY_AUDIO_BASE}/fan.mp3`, defaultVolume: 28 }
 ];
 
-const state = { audio: null, masterGain: null, nodes: new Map(), active: new Set(), timer: null, timerEnd: null, user: null, onboarding: [] };
+const state = { audio: new Map(), active: new Set(), timer: null, timerEnd: null, user: null, onboarding: [] };
 const $ = (selector) => document.querySelector(selector);
 
-function initAudio() {
-  if (state.audio) return;
-  // Mobile optimization: create Web Audio only after user gesture; iOS/Safari keeps gesture permission for background audio better.
-  state.audio = new (window.AudioContext || window.webkitAudioContext)();
-  state.masterGain = state.audio.createGain();
-  state.masterGain.gain.value = 0.85;
-  state.masterGain.connect(state.audio.destination);
+function createAudio(sound) {
+  if (state.audio.has(sound.id)) return state.audio.get(sound.id);
+  const audio = new Audio(sound.src);
+  audio.loop = true;
+  audio.preload = 'metadata';
+  audio.crossOrigin = 'anonymous';
+  audio.volume = 0;
+  audio.playsInline = true;
+  // Mobile optimization: HTML5 Audio is created lazily and started by a user gesture for iOS/Android autoplay rules.
+  state.audio.set(sound.id, audio);
+  return audio;
 }
 
-function createNoiseBuffer() {
-  const buffer = state.audio.createBuffer(1, state.audio.sampleRate * 2, state.audio.sampleRate);
-  const data = buffer.getChannelData(0);
-  for (let i = 0; i < data.length; i += 1) data[i] = Math.random() * 2 - 1;
-  return buffer;
+function fadeVolume(audio, target, duration = 450, onDone) {
+  const start = audio.volume;
+  const startAt = performance.now();
+  const step = (now) => {
+    const progress = Math.min(1, (now - startAt) / duration);
+    audio.volume = start + (target - start) * progress;
+    if (progress < 1) requestAnimationFrame(step);
+    else onDone?.();
+  };
+  requestAnimationFrame(step);
 }
 
-function startSound(sound) {
-  initAudio();
-  if (state.audio.state === 'suspended') state.audio.resume();
-  if (state.nodes.has(sound.id)) return;
-  const gain = state.audio.createGain();
-  gain.gain.value = 0;
-  let source;
-  if (sound.type === 'noise') {
-    source = state.audio.createBufferSource();
-    source.buffer = createNoiseBuffer();
-    source.loop = true;
-    const filter = state.audio.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.value = sound.filter;
-    source.connect(filter).connect(gain).connect(state.masterGain);
-  } else {
-    source = state.audio.createOscillator();
-    source.type = sound.id === 'forest' ? 'triangle' : 'sine';
-    source.frequency.value = sound.frequency;
-    source.connect(gain).connect(state.masterGain);
-  }
-  source.start();
+async function startSound(sound) {
+  const audio = createAudio(sound);
+  if (state.active.has(sound.id)) return;
+  audio.currentTime = audio.currentTime || 0;
+  try { await audio.play(); } catch (error) { console.warn(`Audio could not start: ${sound.name}`, error); return; }
   const volume = Number($(`#volume-${sound.id}`).value) / 100;
-  gain.gain.linearRampToValueAtTime(volume, state.audio.currentTime + 0.45);
-  state.nodes.set(sound.id, { source, gain });
+  fadeVolume(audio, volume, 520);
   state.active.add(sound.id);
   updateUi();
 }
 
 function stopSound(id, fade = 0.35) {
-  const node = state.nodes.get(id);
-  if (!node || !state.audio) return;
-  node.gain.gain.cancelScheduledValues(state.audio.currentTime);
-  node.gain.gain.linearRampToValueAtTime(0.0001, state.audio.currentTime + fade);
-  setTimeout(() => { try { node.source.stop(); } catch {} state.nodes.delete(id); state.active.delete(id); updateUi(); }, fade * 1000 + 60);
+  const audio = state.audio.get(id);
+  if (!audio) return;
+  fadeVolume(audio, 0, fade * 1000, () => { audio.pause(); state.active.delete(id); updateUi(); });
 }
 
 function setVolume(id, value) {
-  const node = state.nodes.get(id);
-  if (node && state.audio) node.gain.gain.linearRampToValueAtTime(Number(value) / 100, state.audio.currentTime + 0.08);
+  const audio = state.audio.get(id);
+  if (audio) audio.volume = Number(value) / 100;
 }
 
 function renderSounds() {
   $('#soundGrid').innerHTML = sounds.map((sound) => `
     <article id="card-${sound.id}" class="sound-card rounded-[1.5rem] p-3 transition duration-300">
       <button class="sound-toggle touch-target flex w-full flex-col items-start rounded-2xl p-2 text-left active:scale-95" data-id="${sound.id}">
-        <span class="text-3xl">${sound.icon}</span>
-        <span class="mt-3 font-semibold">${sound.name}</span>
+        <span class="premium-art mb-3" style="--art:${sound.image}"><span></span></span>
+        <span class="font-semibold">${sound.name}</span>
         <span class="text-xs text-white/40">${sound.category}</span>
       </button>
       <input id="volume-${sound.id}" class="mt-2" type="range" min="0" max="100" value="${sound.defaultVolume}" aria-label="${sound.name} ses seviyesi" />
@@ -99,7 +95,11 @@ function updateUi() {
 }
 
 function applyPreset(name) {
-  const presets = { deep: { rain: 35, fire: 20, meditation: 28 }, focus: { white: 32, meditation: 22 }, nature: { rain: 30, forest: 30, fire: 18 } };
+  const presets = {
+    deep: { rain: 36, fireplace: 18, night: 22, fan: 18 },
+    focus: { fan: 34, cafe: 16, wind: 18 },
+    nature: { rain: 26, forest: 28, stream: 28, thunder: 12 }
+  };
   stopAll(0.2);
   Object.entries(presets[name] || {}).forEach(([id, volume]) => { $(`#volume-${id}`).value = volume; startSound(sounds.find((s) => s.id === id)); });
 }
@@ -187,6 +187,9 @@ $('#masterToggle').addEventListener('click', () => state.active.size ? stopAll()
 $('#stopAllButton').addEventListener('click', () => stopAll());
 $('#authButton').addEventListener('click', signIn);
 $('#saveMixButton').addEventListener('click', saveMix);
-document.addEventListener('visibilitychange', () => { if (!document.hidden && state.audio?.state === 'suspended') state.audio.resume(); });
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) return;
+  state.active.forEach((id) => state.audio.get(id)?.play().catch(() => {}));
+});
 
 renderSounds(); initAuraCanvas(); initOnboarding(); loadSession();
